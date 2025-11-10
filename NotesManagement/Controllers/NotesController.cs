@@ -14,19 +14,13 @@ namespace NotesManagement.Controllers
         {
             _context = context;
         }
-        // GET: NotesController
+        
         public async Task<IActionResult> Index()
         {
             var notes = await _context.Notes.OrderByDescending(n => n.CreatedAt)
                         .ToListAsync();
 
             return View(notes);
-        }
-
-        // GET: NotesController/Details/5
-        public ActionResult Details(int id)
-        {
-            return View();
         }
 
         // GET: NotesController/Create
@@ -40,37 +34,31 @@ namespace NotesManagement.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create([Bind("Title,Content")] Note note)
         {
-            try
+            if (ModelState.IsValid)
             {
-                if (ModelState.IsValid)
-                {
-                    note.CreatedAt = DateTime.UtcNow;
-                    _context.Add(note);
-                    await _context.SaveChangesAsync();
-                    return RedirectToAction(nameof(Index));
-                }
-
-                var notes = await _context.Notes
-                    .OrderByDescending(n => n.CreatedAt)
-                    .ToListAsync();
-                return View("Index", notes);
+                note.CreatedAt = DateTime.UtcNow;
+                _context.Add(note);
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
-            catch
-            {
-                return View();
-            }
+            return View(note);
         }
 
         // GET: NotesController/Edit/5
-        public ActionResult Edit(int id)
+        public async Task<IActionResult> Edit(int id)
         {
-            return View();
+            var note = await _context.Notes.FindAsync(id);
+            if (note == null)
+            {
+                return NotFound();
+            }
+            return View(note);
         }
 
         // POST: NotesController/Edit/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<ActionResult> Edit(int id, [Bind("Id,Title,Content,CreatedAt")] Note note)
+        public async Task<IActionResult> Edit(int id, [Bind("Id,Title,Content,CreatedAt")] Note note)
         {
             if (id != note.Id)
             {
@@ -84,6 +72,7 @@ namespace NotesManagement.Controllers
                     note.UpdatedAt = DateTime.UtcNow;
                     _context.Update(note);
                     await _context.SaveChangesAsync();
+                    return RedirectToAction(nameof(Index));
                 }
                 catch (DbUpdateConcurrencyException)
                 {
@@ -93,15 +82,8 @@ namespace NotesManagement.Controllers
                     }
                     throw;
                 }
-                return RedirectToAction(nameof(Index));
             }
-            return RedirectToAction(nameof(Index));
-        }
-
-        // GET: NotesController/Delete/5
-        public ActionResult DeleteNote(int id)
-        {
-            return View();
+            return View(note);
         }
 
         // POST: NotesController/Delete/5
@@ -109,20 +91,13 @@ namespace NotesManagement.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id)
         {
-            try
+            var note = await _context.Notes.FindAsync(id);
+            if (note != null)
             {
-                var note = await _context.Notes.FindAsync(id);
-                if (note != null)
-                {
-                    _context.Notes.Remove(note);
-                    await _context.SaveChangesAsync();
-                }
-                return RedirectToAction(nameof(Index));
+                _context.Notes.Remove(note);
+                await _context.SaveChangesAsync();
             }
-            catch
-            {
-                return View();
-            }
+            return RedirectToAction(nameof(Index));
         }
 
         private bool NoteExists(int id)
